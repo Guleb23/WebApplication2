@@ -50,6 +50,9 @@ namespace WebApplication2
                                .AllowCredentials();  // Разрешить любые заголовки
                     });
             });
+
+            
+
             builder.Services.AddDbContext<ApplicationDBContext>(options =>
             {
                 options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"));
