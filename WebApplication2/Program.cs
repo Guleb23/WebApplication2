@@ -44,7 +44,7 @@ namespace WebApplication2
                 options.AddPolicy("AllowAllOrigins",
                     builder =>
                     {
-                        builder.WithOrigins("https://guleb23-mtrepo-b896.twc1.net/", "http://guleb23-mtrepo-b896.twc1.net/")// Разрешить запросы с любого домена
+                        builder.WithOrigins("https://guleb23-mtrepo-b896.twc1.net", "https://guleb23-mtrepo-b896.twc1.net")// Разрешить запросы с любого домена
                                 .AllowAnyMethod() // Разрешить любые HTTP-методы (GET, POST и т.д.)
                                .AllowAnyHeader()
                                .AllowCredentials();  // Разрешить любые заголовки
