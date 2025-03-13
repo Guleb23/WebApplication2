@@ -77,11 +77,12 @@ namespace WebApplication2
 
 
             var app = builder.Build();
-            using (var scope = app.Services.CreateScope())
-            {
-                var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDBContext>();
-                dbContext.Database.Migrate();
-            }
+            //using (var scope = app.Services.CreateScope())
+            //{
+            //    var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDBContext>();
+            //    if(dbContext.Database.)
+            //    dbContext.Database.Migrate();
+            //}
             app.Urls.Add("http://*:5000");
             app.UseCors("AllowAllOrigins");
             app.UseAuthentication();
