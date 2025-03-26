@@ -7,6 +7,8 @@ using WebApplication2.Helper;
 using WebApplication2.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Identity;
+using System.Security.Cryptography;
 
 namespace WebApplication2
 {
@@ -70,10 +72,14 @@ namespace WebApplication2
                     configuration["Jwt:Audience"]
                 );
             });
+            builder.Configuration.AddJsonFile("appsettings.json");
+
+            builder.Services.AddSingleton<TelegramAuthService>();
 
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
+
 
 
             var app = builder.Build();
@@ -178,8 +184,8 @@ namespace WebApplication2
                 return Results.File(fileStream, "application/pdf", document.FileName);
             });
 
-            //post
-            app.MapPost("api/createUser", async (ApplicationDBContext ctx, [FromBody] UserDTO userDTO ,  PasswordGeneration generator, SendSMS sender, Validation val) =>
+
+        app.MapPost("api/createUser", async (ApplicationDBContext ctx, [FromBody] UserDTO userDTO ,  PasswordGeneration generator, SendSMS sender, Validation val) =>
             {
                 // Проверка, что объект user не null
                 if (userDTO == null)
@@ -313,7 +319,30 @@ namespace WebApplication2
 
                 return Results.Ok("Файлы успешно загружены.");
             });
-           
+
+            app.MapGet("/auth/telegram", async (HttpContext context, TelegramAuthService authService) =>
+            {
+                var data = context.Request.Query
+                    .ToDictionary(x => x.Key, x => x.Value.ToString());
+
+                if (authService.ValidateTelegramData(data))
+                {
+                    var user = new
+                    {
+                        Id = data["id"],
+                        FirstName = data.GetValueOrDefault("first_name"),
+                        LastName = data.GetValueOrDefault("last_name"),
+                        Username = data.GetValueOrDefault("username"),
+                        PhotoUrl = data.GetValueOrDefault("photo_url")
+                    };
+
+                    return Results.Ok(new { success = true, user });
+                }
+                else
+                {
+                    return Results.BadRequest(new { success = false, message = "Invalid Telegram data" });
+                }
+            });
 
             //update
             app.MapPatch("api/user/{id}", [Authorize] async (ApplicationDBContext ctx, int id, [FromBody] UserDTO user) =>
@@ -388,7 +417,7 @@ namespace WebApplication2
 
             app.Run();
         }
-      
+        
 
     }
 }
