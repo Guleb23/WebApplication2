@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+п»їusing Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Microsoft.EntityFrameworkCore;
@@ -46,10 +46,10 @@ namespace WebApplication2
                 options.AddPolicy("AllowAllOrigins",
                     builder =>
                     {
-                        builder.WithOrigins("https://guleb23-mtrepo-b896.twc1.net", "https://guleb23-mtrepo-b896.twc1.net")// Разрешить запросы с любого домена
-                                .AllowAnyMethod() // Разрешить любые HTTP-методы (GET, POST и т.д.)
+                        builder.WithOrigins("https://guleb23-mtrepo-b896.twc1.net", "https://guleb23-mtrepo-b896.twc1.net")// Р Р°Р·СЂРµС€РёС‚СЊ Р·Р°РїСЂРѕСЃС‹ СЃ Р»СЋР±РѕРіРѕ РґРѕРјРµРЅР°
+                                .AllowAnyMethod() // Р Р°Р·СЂРµС€РёС‚СЊ Р»СЋР±С‹Рµ HTTP-РјРµС‚РѕРґС‹ (GET, POST Рё С‚.Рґ.)
                                .AllowAnyHeader()
-                               .AllowCredentials();  // Разрешить любые заголовки
+                               .AllowCredentials();  // Р Р°Р·СЂРµС€РёС‚СЊ Р»СЋР±С‹Рµ Р·Р°РіРѕР»РѕРІРєРё
                     });
             });
 
@@ -150,47 +150,47 @@ namespace WebApplication2
             {
                 var document = await ctx.Documents.FindAsync(documentId);
 
-                // Проверяем, что документ существует
+                // РџСЂРѕРІРµСЂСЏРµРј, С‡С‚Рѕ РґРѕРєСѓРјРµРЅС‚ СЃСѓС‰РµСЃС‚РІСѓРµС‚
                 if (document == null)
                 {
-                    return Results.NotFound("Документ не найден.");
+                    return Results.NotFound("Р”РѕРєСѓРјРµРЅС‚ РЅРµ РЅР°Р№РґРµРЅ.");
                 }
 
-                // Проверяем, что файл существует
+                // РџСЂРѕРІРµСЂСЏРµРј, С‡С‚Рѕ С„Р°Р№Р» СЃСѓС‰РµСЃС‚РІСѓРµС‚
                 if (!System.IO.File.Exists(document.FilePath))
                 {
-                    return Results.NotFound("Файл не найден.");
+                    return Results.NotFound("Р¤Р°Р№Р» РЅРµ РЅР°Р№РґРµРЅ.");
                 }
 
-                // Проверяем, что файл не пустой
+                // РџСЂРѕРІРµСЂСЏРµРј, С‡С‚Рѕ С„Р°Р№Р» РЅРµ РїСѓСЃС‚РѕР№
                 var fileInfo = new FileInfo(document.FilePath);
                 if (fileInfo.Length == 0)
                 {
-                    return Results.NotFound("Файл пустой.");
+                    return Results.NotFound("Р¤Р°Р№Р» РїСѓСЃС‚РѕР№.");
                 }
 
-                // Открываем файл для чтения
+                // РћС‚РєСЂС‹РІР°РµРј С„Р°Р№Р» РґР»СЏ С‡С‚РµРЅРёСЏ
                 var fileStream = System.IO.File.OpenRead(document.FilePath);
 
-                // Добавляем заголовок Content-Disposition
+                // Р”РѕР±Р°РІР»СЏРµРј Р·Р°РіРѕР»РѕРІРѕРє Content-Disposition
                 var contentDisposition = new System.Net.Mime.ContentDisposition
                 {
-                    FileName = document.FileName, // Имя файла
-                    Inline = false, // Указываем, что файл должен скачиваться, а не открываться в браузере
+                    FileName = document.FileName, // РРјСЏ С„Р°Р№Р»Р°
+                    Inline = false, // РЈРєР°Р·С‹РІР°РµРј, С‡С‚Рѕ С„Р°Р№Р» РґРѕР»Р¶РµРЅ СЃРєР°С‡РёРІР°С‚СЊСЃСЏ, Р° РЅРµ РѕС‚РєСЂС‹РІР°С‚СЊСЃСЏ РІ Р±СЂР°СѓР·РµСЂРµ
                 };
                 httpContext.Response.Headers["Content-Disposition"] = contentDisposition.ToString();
 
-                // Возвращаем файл с правильными заголовками
+                // Р’РѕР·РІСЂР°С‰Р°РµРј С„Р°Р№Р» СЃ РїСЂР°РІРёР»СЊРЅС‹РјРё Р·Р°РіРѕР»РѕРІРєР°РјРё
                 return Results.File(fileStream, "application/pdf", document.FileName);
             });
 
 
         app.MapPost("api/createUser", async (ApplicationDBContext ctx, [FromBody] UserDTO userDTO ,  PasswordGeneration generator, SendSMS sender, Validation val) =>
             {
-                // Проверка, что объект user не null
+                // РџСЂРѕРІРµСЂРєР°, С‡С‚Рѕ РѕР±СЉРµРєС‚ user РЅРµ null
                 if (userDTO == null)
                 {
-                    return Results.BadRequest("Данные пользователя не предоставлены.");
+                    return Results.BadRequest("Р”Р°РЅРЅС‹Рµ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ РЅРµ РїСЂРµРґРѕСЃС‚Р°РІР»РµРЅС‹.");
                 }
 
 
@@ -198,7 +198,7 @@ namespace WebApplication2
                 userDTO.Phone = val.ValidPhone(userDTO.Phone);
                 if (ctx.Users.FirstOrDefault(u => u.Phone == userDTO.Phone) != null)
                 {
-                    return Results.Conflict("Вы уже зарегестрированы, пожалуйста пройдите процесс авторизации");
+                    return Results.Conflict("Р’С‹ СѓР¶Рµ Р·Р°СЂРµРіРµСЃС‚СЂРёСЂРѕРІР°РЅС‹, РїРѕР¶Р°Р»СѓР№СЃС‚Р° РїСЂРѕР№РґРёС‚Рµ РїСЂРѕС†РµСЃСЃ Р°РІС‚РѕСЂРёР·Р°С†РёРё");
                 }
                 else
                 {
@@ -215,7 +215,7 @@ namespace WebApplication2
 
                     ctx.Users.Add(userModel);
 
-                    await ctx.SaveChangesAsync(); // Сохраняем, чтобы получить Id пользователя
+                    await ctx.SaveChangesAsync(); // РЎРѕС…СЂР°РЅСЏРµРј, С‡С‚РѕР±С‹ РїРѕР»СѓС‡РёС‚СЊ Id РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ
                     PersonalDataModel pesonal = new PersonalDataModel()
                     {
                         Seria = "",
@@ -262,46 +262,46 @@ namespace WebApplication2
 
             app.MapPost("api/uploadDocument/{userId}", [Authorize] async (ApplicationDBContext ctx, int userId, HttpRequest request) =>
             {
-                // Проверяем, существует ли пользователь
+                // РџСЂРѕРІРµСЂСЏРµРј, СЃСѓС‰РµСЃС‚РІСѓРµС‚ Р»Рё РїРѕР»СЊР·РѕРІР°С‚РµР»СЊ
                 var user = await ctx.Users.FindAsync(userId);
                 if (user == null)
                 {
-                    return Results.NotFound("Пользователь не найден.");
+                    return Results.NotFound("РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ РЅРµ РЅР°Р№РґРµРЅ.");
                 }
 
-                // Проверяем, есть ли файлы в запросе
+                // РџСЂРѕРІРµСЂСЏРµРј, РµСЃС‚СЊ Р»Рё С„Р°Р№Р»С‹ РІ Р·Р°РїСЂРѕСЃРµ
                 if (!request.HasFormContentType)
                 {
-                    return Results.BadRequest("Нет файлов для загрузки.");
+                    return Results.BadRequest("РќРµС‚ С„Р°Р№Р»РѕРІ РґР»СЏ Р·Р°РіСЂСѓР·РєРё.");
                 }
 
                 var form = await request.ReadFormAsync();
                 string title = form["title"];
                 var files = form.Files;
 
-                // Папка для хранения файлов
+                // РџР°РїРєР° РґР»СЏ С…СЂР°РЅРµРЅРёСЏ С„Р°Р№Р»РѕРІ
                 var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "Uploads");
                 if (!Directory.Exists(uploadsFolder))
                 {
                     Directory.CreateDirectory(uploadsFolder);
                 }
 
-                // Обрабатываем каждый файл
+                // РћР±СЂР°Р±Р°С‚С‹РІР°РµРј РєР°Р¶РґС‹Р№ С„Р°Р№Р»
                 foreach (var file in files)
                 {
                     if (file.Length > 0)
                     {
-                        // Генерируем уникальное имя файла
+                        // Р“РµРЅРµСЂРёСЂСѓРµРј СѓРЅРёРєР°Р»СЊРЅРѕРµ РёРјСЏ С„Р°Р№Р»Р°
                         var fileName = Guid.NewGuid().ToString() + Path.GetExtension(file.FileName);
                         var filePath = Path.Combine(uploadsFolder, fileName);
 
-                        // Сохраняем файл на сервере
+                        // РЎРѕС…СЂР°РЅСЏРµРј С„Р°Р№Р» РЅР° СЃРµСЂРІРµСЂРµ
                         using (var stream = new FileStream(filePath, FileMode.Create))
                         {
                             await file.CopyToAsync(stream);
                         }
 
-                        // Сохраняем информацию о файле в базе данных
+                        // РЎРѕС…СЂР°РЅСЏРµРј РёРЅС„РѕСЂРјР°С†РёСЋ Рѕ С„Р°Р№Р»Рµ РІ Р±Р°Р·Рµ РґР°РЅРЅС‹С…
                         var document = new DocumentModel
                         {
                             FileName = file.FileName,
@@ -314,10 +314,10 @@ namespace WebApplication2
                     }
                 }
 
-                // Сохраняем изменения в базе данных
+                // РЎРѕС…СЂР°РЅСЏРµРј РёР·РјРµРЅРµРЅРёСЏ РІ Р±Р°Р·Рµ РґР°РЅРЅС‹С…
                 await ctx.SaveChangesAsync();
 
-                return Results.Ok("Файлы успешно загружены.");
+                return Results.Ok("Р¤Р°Р№Р»С‹ СѓСЃРїРµС€РЅРѕ Р·Р°РіСЂСѓР¶РµРЅС‹.");
             });
 
             app.MapGet("/auth/telegram", async (HttpContext context, TelegramAuthService authService) =>
@@ -343,6 +343,15 @@ namespace WebApplication2
                     return Results.BadRequest(new { success = false, message = "Invalid Telegram data" });
                 }
             });
+            app.MapPost("/auth/phone", async ([FromBody] PhoneRequest request) =>
+            {
+                Console.WriteLine($"рџ“І РќРѕРјРµСЂ С‚РµР»РµС„РѕРЅР° РѕС‚ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ {request.UserId}: {request.PhoneNumber}");
+
+                // Р›РѕРіРёРєР° СЃРѕС…СЂР°РЅРµРЅРёСЏ РІ Р±Р°Р·Сѓ РґР°РЅРЅС‹С… Р·РґРµСЃСЊ
+                // РќР°РїСЂРёРјРµСЂ: СЃРѕС…СЂР°РЅРёС‚СЊ С‡РµСЂРµР· Entity Framework
+
+                return Results.Ok(new { success = true });
+            });
 
             //update
             app.MapPatch("api/user/{id}", [Authorize] async (ApplicationDBContext ctx, int id, [FromBody] UserDTO user) =>
@@ -358,7 +367,7 @@ namespace WebApplication2
                     if (!user.FirstName.IsNullOrEmpty()) oldUser.FirstName = user.FirstName;
                     if (user.GetDocsSposobId != 0) oldUser.GetDocsSposobId = user.GetDocsSposobId;
                     if (!user.LastName.IsNullOrEmpty()) oldUser.LastName = user.LastName;
-                    if (!user.Password.IsNullOrEmpty()) oldUser.Password = user.Password; // Пароль обновляется только если передан
+                    if (!user.Password.IsNullOrEmpty()) oldUser.Password = user.Password; // РџР°СЂРѕР»СЊ РѕР±РЅРѕРІР»СЏРµС‚СЃСЏ С‚РѕР»СЊРєРѕ РµСЃР»Рё РїРµСЂРµРґР°РЅ
                     if (user.PaymentMethodId != 0) oldUser.PaymentMethodId = user.PaymentMethodId;
                     if (!user.Phone.IsNullOrEmpty()) oldUser.Phone = user.Phone;
                     await ctx.SaveChangesAsync();
@@ -399,20 +408,20 @@ namespace WebApplication2
 
                 if (document == null)
                 {
-                    return Results.NotFound("Документ не найден.");
+                    return Results.NotFound("Р”РѕРєСѓРјРµРЅС‚ РЅРµ РЅР°Р№РґРµРЅ.");
                 }
 
-                // Удаляем файл с сервера
+                // РЈРґР°Р»СЏРµРј С„Р°Р№Р» СЃ СЃРµСЂРІРµСЂР°
                 if (System.IO.File.Exists(document.FilePath))
                 {
                     System.IO.File.Delete(document.FilePath);
                 }
 
-                // Удаляем запись из базы данных
+                // РЈРґР°Р»СЏРµРј Р·Р°РїРёСЃСЊ РёР· Р±Р°Р·С‹ РґР°РЅРЅС‹С…
                 ctx.Documents.Remove(document);
                 await ctx.SaveChangesAsync();
 
-                return Results.Ok("Документ успешно удален.");
+                return Results.Ok("Р”РѕРєСѓРјРµРЅС‚ СѓСЃРїРµС€РЅРѕ СѓРґР°Р»РµРЅ.");
             });
 
             app.Run();
