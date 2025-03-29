@@ -119,21 +119,19 @@ namespace WebApplication2
                 return Results.Json(authData);
             });
 
-            app.MapPost("/auth/telegram/phone", async (HttpContext context, PasswordGeneration generator) =>
+            app.MapPost("/auth/telegram/contact", async (HttpContext context) =>
             {
-                var form = await context.Request.ReadFromJsonAsync<TelegramPhoneRequest>();
-                if (form == null) return Results.BadRequest("Invalid request");
+                var body = await context.Request.ReadFromJsonAsync<TelegramPhoneRequest>();
+                if (body != null)
+                {
+                    Console.WriteLine($"Получен номер телефона: {body.Phone}");
+                    return Results.Ok(new { Success = true, PhoneNumber = body.Phone });
+                }
 
-                string password = generator.GeneratePassword();
-                string message = $"Ваш номер: {form.Phone}\nВаш пароль: {password}";
-
-                await botClient.SendTextMessageAsync(form.UserId, message);
-
-                return Results.Ok("Password sent to Telegram");
+                return Results.BadRequest(new { Success = false, Message = "Неверные данные" });
             });
 
-            bool ValidateTelegramData(long id, string firstName, string? lastName, string? username,
-                                      string? photoUrl, long authDate, string hash)
+             bool ValidateTelegramData(long id, string firstName, string? lastName, string? username,string? photoUrl, long authDate, string hash)
             {
                 var dataCheckString = $"auth_date={authDate}\n" +
                                       $"first_name={firstName}\n" +
@@ -151,12 +149,30 @@ namespace WebApplication2
 
                 return computedHash == hash;
             }
+            app.MapPost("/webhook", async (HttpContext context) =>
+            {
+                var body = await context.Request.ReadFromJsonAsync<Update>();
+                if (body?.Message?.Contact != null)
+                {
+                    var phoneNumber = body.Message.Contact.PhoneNumber;
+                    var userId = body.Message.Contact.UserId;
+
+                    Console.WriteLine($"Номер телефона пользователя {userId}: {phoneNumber}");
+
+                    // Можно сохранить номер телефона в базе данных
+                    return Results.Ok(new { Success = true });
+                }
+
+                return Results.Ok();
+            });
 
 
 
-            //Methods
-            //Get
-            app.MapGet("api/users", (ApplicationDBContext ctx) =>
+
+
+        //Methods
+        //Get
+        app.MapGet("api/users", (ApplicationDBContext ctx) =>
             {
                 return ctx.Users.ToList();
             });
@@ -440,7 +456,21 @@ namespace WebApplication2
 
             app.Run();
         }
-        
+        public class Update
+        {
+            public Message Message { get; set; }
+        }
+
+        public class Message
+        {
+            public Contact Contact { get; set; }
+        }
+
+        public class Contact
+        {
+            public string PhoneNumber { get; set; }
+            public long UserId { get; set; }
+        }
 
     }
 }
