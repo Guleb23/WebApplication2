@@ -169,8 +169,8 @@ namespace WebApplication2
 
                 ctx.PersonalData.Add(personal);
                 await ctx.SaveChangesAsync();
-
-                return Results.Ok(newUser);
+                string jwtM = generator.GenerateJwtToken(authData.Username);
+                return Results.Json(new { token = jwtM, id = authData.Id });
             });
             bool ValidateTelegramData(long id, string firstName, string? lastName, string? username,string? photoUrl, long authDate, string hash)
             {
