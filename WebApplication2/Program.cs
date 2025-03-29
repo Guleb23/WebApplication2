@@ -108,56 +108,69 @@ namespace WebApplication2
             var botClient = new TelegramBotClient(BOT_TOKEN);
             app.MapGet("/", () => "Server is running!"); // Проверочный маршрут
 
-            app.MapGet("/auth/telegram", async (HttpContext context, ApplicationDBContext ctx, JWTGenerator generator) =>
+            app.MapPost("/auth/telegram", async (HttpContext context, ApplicationDBContext ctx, JWTGenerator generator) =>
             {
-                var query = context.Request.Query;
+                var form = await context.Request.ReadFormAsync();
+
                 var authData = new
                 {
-                    Id = query["id"],
-                    FirstName = query["first_name"],
-                    Username = query["username"],
-                    Hash = query["hash"]
+                    Id = form["id"],
+                    FirstName = form["first_name"],
+                    Username = form["username"],
+                    Hash = form["hash"],
+                    AuthDate = form["auth_date"]
                 };
-                if (ctx.Users.FirstOrDefault(u => u.Id == authData.Id) != null)
+
+                // 1️⃣ Проверяем подлинность данных (защита от подмены)
+                string botToken = BOT_TOKEN; 
+                string checkString = $"auth_date={authData.AuthDate}&first_name={authData.FirstName}&id={authData.Id}&username={authData.Username}";
+
+                using var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(botToken));
+                byte[] checkHash = hmac.ComputeHash(Encoding.UTF8.GetBytes(checkString));
+                string calculatedHash = BitConverter.ToString(checkHash).Replace("-", "").ToLower();
+
+                if (authData.Hash != calculatedHash)
+                {
+                    return Results.Unauthorized();
+                }
+
+                // 2️⃣ Проверяем, есть ли пользователь в базе
+                var existingUser = ctx.Users.FirstOrDefault(u => u.Id == authData.Id);
+                if (existingUser != null)
                 {
                     string jwt = generator.GenerateJwtToken(authData.Username);
-                    var jsonObject = new
-                    {
-                        token = jwt,
-                        id = authData.Id.ToString(),
-                    };
+                    return Results.Json(new { token = jwt, id = authData.Id });
                 }
-                else
+
+                // 3️⃣ Если пользователя нет — создаем его
+                UserModel newUser = new UserModel()
                 {
-                    UserModel userModel = new UserModel()
-                    {
-                        FirstName = authData.FirstName,
-                        LastName = "",
-                        Email = "",
-                        Phone = "",
-                        Password = ""
-                    };
+                    FirstName = authData.FirstName,
+                    LastName = "",
+                    Email = "",
+                    Phone = "",
+                    Password = ""
+                };
 
-                    ctx.Users.Add(userModel);
+                ctx.Users.Add(newUser);
+                await ctx.SaveChangesAsync();
 
-                    await ctx.SaveChangesAsync(); // Сохраняем, чтобы получить Id пользователя
-                    PersonalDataModel pesonal = new PersonalDataModel()
-                    {
-                        Seria = "",
-                        Nomer = "",
-                        SNILS = "",
-                        DateVidachi = "",
-                        Propiska = "",
-                        WhoVidal = "",
-                        UserId = userModel.Id,
-                    };
+                // 4️⃣ Создаем личные данные (если нужно)
+                PersonalDataModel personal = new PersonalDataModel()
+                {
+                    Seria = "",
+                    Nomer = "",
+                    SNILS = "",
+                    DateVidachi = "",
+                    Propiska = "",
+                    WhoVidal = "",
+                    UserId = newUser.Id
+                };
 
+                ctx.PersonalData.Add(personal);
+                await ctx.SaveChangesAsync();
 
-                    ctx.PersonalData.Add(pesonal);
-                    await ctx.SaveChangesAsync();
-                    return Results.Ok(userModel);
-                }
-                return Results.Json(authData);
+                return Results.Ok(newUser);
             });
             bool ValidateTelegramData(long id, string firstName, string? lastName, string? username,string? photoUrl, long authDate, string hash)
             {
