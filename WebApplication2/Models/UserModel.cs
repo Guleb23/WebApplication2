@@ -13,7 +13,7 @@ namespace WebApplication2.Models
         public string? FirstName { get; set; }
         public string? LastName { get; set; }
         public string? Email { get; set; }
-        public string Phone { get; set; } = string.Empty;
+        public string? Phone { get; set; } = string.Empty;
         public string Password { get; set; } = string.Empty;
         public int PaymentMethodId { get; set; } = 1;
         public int GetDocsSposobId { get; set; } = 1;

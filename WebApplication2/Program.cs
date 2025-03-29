@@ -10,6 +10,9 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Identity;
 using System.Security.Cryptography;
 using Telegram.Bot;
+using System.Reflection.Emit;
+using System.Reflection;
+using Telegram.Bot.Types;
 
 namespace WebApplication2
 {
@@ -105,7 +108,7 @@ namespace WebApplication2
             var botClient = new TelegramBotClient(BOT_TOKEN);
             app.MapGet("/", () => "Server is running!"); // Проверочный маршрут
 
-            app.MapGet("/auth/telegram", async (HttpContext context) =>
+            app.MapGet("/auth/telegram", async (HttpContext context, ApplicationDBContext ctx, JWTGenerator generator) =>
             {
                 var query = context.Request.Query;
                 var authData = new
@@ -115,23 +118,48 @@ namespace WebApplication2
                     Username = query["username"],
                     Hash = query["hash"]
                 };
+                if (ctx.Users.FirstOrDefault(u => u.Id == authData.Id) != null)
+                {
+                    string jwt = generator.GenerateJwtToken(authData.Username);
+                    var jsonObject = new
+                    {
+                        token = jwt,
+                        id = authData.Id.ToString(),
+                    };
+                }
+                else
+                {
+                    UserModel userModel = new UserModel()
+                    {
+                        FirstName = authData.FirstName,
+                        LastName = "",
+                        Email = "",
+                        Phone = "",
+                        Password = ""
+                    };
 
+                    ctx.Users.Add(userModel);
+
+                    await ctx.SaveChangesAsync(); // Сохраняем, чтобы получить Id пользователя
+                    PersonalDataModel pesonal = new PersonalDataModel()
+                    {
+                        Seria = "",
+                        Nomer = "",
+                        SNILS = "",
+                        DateVidachi = "",
+                        Propiska = "",
+                        WhoVidal = "",
+                        UserId = userModel.Id,
+                    };
+
+
+                    ctx.PersonalData.Add(pesonal);
+                    await ctx.SaveChangesAsync();
+                    return Results.Ok(userModel);
+                }
                 return Results.Json(authData);
             });
-
-            app.MapPost("/auth/telegram/contact", async (HttpContext context) =>
-            {
-                var body = await context.Request.ReadFromJsonAsync<TelegramPhoneRequest>();
-                if (body != null)
-                {
-                    Console.WriteLine($"Получен номер телефона: {body.Phone}");
-                    return Results.Ok(new { Success = true, PhoneNumber = body.Phone });
-                }
-
-                return Results.BadRequest(new { Success = false, Message = "Неверные данные" });
-            });
-
-             bool ValidateTelegramData(long id, string firstName, string? lastName, string? username,string? photoUrl, long authDate, string hash)
+            bool ValidateTelegramData(long id, string firstName, string? lastName, string? username,string? photoUrl, long authDate, string hash)
             {
                 var dataCheckString = $"auth_date={authDate}\n" +
                                       $"first_name={firstName}\n" +
@@ -149,30 +177,10 @@ namespace WebApplication2
 
                 return computedHash == hash;
             }
-            app.MapPost("/webhook", async (HttpContext context) =>
-            {
-                var body = await context.Request.ReadFromJsonAsync<Update>();
-                if (body?.Message?.Contact != null)
-                {
-                    var phoneNumber = body.Message.Contact.PhoneNumber;
-                    var userId = body.Message.Contact.UserId;
-
-                    Console.WriteLine($"Номер телефона пользователя {userId}: {phoneNumber}");
-
-                    // Можно сохранить номер телефона в базе данных
-                    return Results.Ok(new { Success = true });
-                }
-
-                return Results.Ok();
-            });
-
-
-
-
-
-        //Methods
-        //Get
-        app.MapGet("api/users", (ApplicationDBContext ctx) =>
+            
+            //Methods
+            //Get
+             app.MapGet("api/users", (ApplicationDBContext ctx) =>
             {
                 return ctx.Users.ToList();
             });
