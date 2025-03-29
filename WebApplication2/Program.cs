@@ -105,34 +105,18 @@ namespace WebApplication2
             var botClient = new TelegramBotClient(BOT_TOKEN);
             app.MapGet("/", () => "Server is running!"); // Проверочный маршрут
 
-            app.MapPost("/auth/telegram", (HttpContext context) =>
+            app.MapGet("/auth/telegram", async (HttpContext context) =>
             {
-                var form = context.Request.Form;
-
-                long id = long.Parse(form["id"]);
-                string first_name = form["first_name"];
-                string? last_name = form["last_name"];
-                string? username = form["username"];
-                string? photo_url = form["photo_url"];
-                long auth_date = long.Parse(form["auth_date"]);
-                string hash = form["hash"];
-
-                if (!ValidateTelegramData(id, first_name, last_name, username, photo_url, auth_date, hash))
+                var query = context.Request.Query;
+                var authData = new
                 {
-                    return Results.Unauthorized();
-                }
-
-                var userData = new
-                {
-                    Id = id,
-                    FirstName = first_name,
-                    LastName = last_name,
-                    Username = username,
-                    PhotoUrl = photo_url,
-                    AuthDate = DateTimeOffset.FromUnixTimeSeconds(auth_date).DateTime
+                    Id = query["id"],
+                    FirstName = query["first_name"],
+                    Username = query["username"],
+                    Hash = query["hash"]
                 };
 
-                return Results.Ok(userData);
+                return Results.Json(authData);
             });
 
             app.MapPost("/auth/telegram/phone", async (HttpContext context, PasswordGeneration generator) =>
