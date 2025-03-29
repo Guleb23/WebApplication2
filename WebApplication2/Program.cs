@@ -103,6 +103,7 @@ namespace WebApplication2
 
 
             var botClient = new TelegramBotClient(BOT_TOKEN);
+            app.MapGet("/", () => "Server is running!"); // Проверочный маршрут
 
             app.MapGet("/auth/telegram", (long id, string first_name, string? last_name, string? username,
                                           string? photo_url, long auth_date, string hash) =>
