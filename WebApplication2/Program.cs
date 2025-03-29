@@ -91,7 +91,7 @@ namespace WebApplication2
             //    if(dbContext.Database.)
             //    dbContext.Database.Migrate();
             //}
-            app.Urls.Add("http://*:5000");
+           
             app.UseCors("AllowAllOrigins");
             app.UseAuthentication();
             app.UseAuthorization();
