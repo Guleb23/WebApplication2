@@ -50,14 +50,15 @@ namespace WebApplication2
                 options.AddPolicy("AllowAllOrigins",
                     builder =>
                     {
-                        builder.WithOrigins("https://guleb23-mtrepo-b896.twc1.net/", "https://guleb23-mtrepo-b896.twc1.net")// Разрешить запросы с любого домена
-                               .AllowAnyMethod() // Разрешить любые HTTP-методы (GET, POST и т.д.)
+                        // Уберите слеши для единообразия
+                        builder.WithOrigins("https://guleb23-mtrepo-b896.twc1.net")
+                               .AllowAnyMethod()
                                .AllowAnyHeader()
-                               .AllowCredentials();  // Разрешить любые заголовки
+                               .AllowCredentials();
                     });
             });
 
-            
+
 
             builder.Services.AddDbContext<ApplicationDBContext>(options =>
             {
@@ -85,14 +86,9 @@ namespace WebApplication2
             const string BOT_TOKEN = "7593576707:AAFfwzMnHc6eUpyrZVrWhJokJg_NdK4LcQs"; // Вставь токен бота
 
             var app = builder.Build();
-            //using (var scope = app.Services.CreateScope())
-            //{
-            //    var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDBContext>();
-            //    if(dbContext.Database.)
-            //    dbContext.Database.Migrate();
-            //}
-           
             app.UseCors("AllowAllOrigins");
+            app.MapMethods("/auth/telegram", new[] { "OPTIONS" },
+             () => Results.Ok()).RequireCors("AllowAllOrigins");
             app.UseAuthentication();
             app.UseAuthorization();
             app.UseHttpsRedirection(); // Перенаправление на HTTPS
@@ -108,7 +104,7 @@ namespace WebApplication2
             var botClient = new TelegramBotClient(BOT_TOKEN);
             app.MapGet("/", () => "Server is running!"); // Проверочный маршрут
 
-            app.MapPost("/auth/telegram", async (HttpContext context, ApplicationDBContext ctx, JWTGenerator generator) =>
+            app.MapPost("/auth/telegram",  async (HttpContext context, ApplicationDBContext ctx, JWTGenerator generator) =>
             {
                 var form = await context.Request.ReadFormAsync();
 
@@ -193,7 +189,7 @@ namespace WebApplication2
             
             //Methods
             //Get
-             app.MapGet("api/users", (ApplicationDBContext ctx) =>
+            app.MapGet("api/users", (ApplicationDBContext ctx) =>
             {
                 return ctx.Users.ToList();
             });
