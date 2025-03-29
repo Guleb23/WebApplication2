@@ -92,11 +92,11 @@ namespace WebApplication2
             app.UseCors("AllowAllOrigins");
             app.UseAuthentication();
             app.UseAuthorization();
-
+            app.UseHttpsRedirection(); // Перенаправление на HTTPS
 
             // Configure the HTTP request pipeline.
-            
-                app.UseSwagger();
+
+            app.UseSwagger();
                 app.UseSwaggerUI();
 
 
