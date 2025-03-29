@@ -105,9 +105,18 @@ namespace WebApplication2
             var botClient = new TelegramBotClient(BOT_TOKEN);
             app.MapGet("/", () => "Server is running!"); // Проверочный маршрут
 
-            app.MapGet("/auth/telegram", (long id, string first_name, string? last_name, string? username,
-                                          string? photo_url, long auth_date, string hash) =>
+            app.MapPost("/auth/telegram", (HttpContext context) =>
             {
+                var form = context.Request.Form;
+
+                long id = long.Parse(form["id"]);
+                string first_name = form["first_name"];
+                string? last_name = form["last_name"];
+                string? username = form["username"];
+                string? photo_url = form["photo_url"];
+                long auth_date = long.Parse(form["auth_date"]);
+                string hash = form["hash"];
+
                 if (!ValidateTelegramData(id, first_name, last_name, username, photo_url, auth_date, hash))
                 {
                     return Results.Unauthorized();
