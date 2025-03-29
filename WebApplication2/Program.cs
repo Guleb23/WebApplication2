@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Identity;
 using System.Security.Cryptography;
+using Telegram.Bot;
 
 namespace WebApplication2
 {
@@ -74,13 +75,11 @@ namespace WebApplication2
             });
             builder.Configuration.AddJsonFile("appsettings.json");
 
-            builder.Services.AddSingleton<TelegramAuthService>();
-
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 
-
+            const string BOT_TOKEN = "7593576707:AAFfwzMnHc6eUpyrZVrWhJokJg_NdK4LcQs"; // Вставь токен бота
 
             var app = builder.Build();
             //using (var scope = app.Services.CreateScope())
@@ -99,11 +98,65 @@ namespace WebApplication2
             
                 app.UseSwagger();
                 app.UseSwaggerUI();
-            
 
 
 
 
+            var botClient = new TelegramBotClient(BOT_TOKEN);
+
+            app.MapGet("/auth/telegram", (long id, string first_name, string? last_name, string? username,
+                                          string? photo_url, long auth_date, string hash) =>
+            {
+                if (!ValidateTelegramData(id, first_name, last_name, username, photo_url, auth_date, hash))
+                {
+                    return Results.Unauthorized();
+                }
+
+                var userData = new
+                {
+                    Id = id,
+                    FirstName = first_name,
+                    LastName = last_name,
+                    Username = username,
+                    PhotoUrl = photo_url,
+                    AuthDate = DateTimeOffset.FromUnixTimeSeconds(auth_date).DateTime
+                };
+
+                return Results.Ok(userData);
+            });
+
+            app.MapPost("/auth/telegram/phone", async (HttpContext context, PasswordGeneration generator) =>
+            {
+                var form = await context.Request.ReadFromJsonAsync<TelegramPhoneRequest>();
+                if (form == null) return Results.BadRequest("Invalid request");
+
+                string password = generator.GeneratePassword();
+                string message = $"Ваш номер: {form.Phone}\nВаш пароль: {password}";
+
+                await botClient.SendTextMessageAsync(form.UserId, message);
+
+                return Results.Ok("Password sent to Telegram");
+            });
+
+            bool ValidateTelegramData(long id, string firstName, string? lastName, string? username,
+                                      string? photoUrl, long authDate, string hash)
+            {
+                var dataCheckString = $"auth_date={authDate}\n" +
+                                      $"first_name={firstName}\n" +
+                                      $"id={id}\n" +
+                                      (lastName != null ? $"last_name={lastName}\n" : "") +
+                                      (username != null ? $"username={username}\n" : "") +
+                                      (photoUrl != null ? $"photo_url={photoUrl}\n" : "");
+
+                dataCheckString = dataCheckString.TrimEnd('\n');
+
+                var secretKey = SHA256.HashData(Encoding.UTF8.GetBytes(BOT_TOKEN));
+                using var hmac = new HMACSHA256(secretKey);
+                var hashBytes = hmac.ComputeHash(Encoding.UTF8.GetBytes(dataCheckString));
+                var computedHash = BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
+
+                return computedHash == hash;
+            }
 
 
 
@@ -185,7 +238,7 @@ namespace WebApplication2
             });
 
 
-        app.MapPost("api/createUser", async (ApplicationDBContext ctx, [FromBody] UserDTO userDTO ,  PasswordGeneration generator, SendSMS sender, Validation val) =>
+            app.MapPost("api/createUser", async (ApplicationDBContext ctx, [FromBody] UserDTO userDTO ,  PasswordGeneration generator, SendSMS sender, Validation val) =>
             {
                 // Проверка, что объект user не null
                 if (userDTO == null)
@@ -318,39 +371,6 @@ namespace WebApplication2
                 await ctx.SaveChangesAsync();
 
                 return Results.Ok("Файлы успешно загружены.");
-            });
-
-            app.MapGet("/auth/telegram", async (HttpContext context, TelegramAuthService authService) =>
-            {
-                var data = context.Request.Query
-                    .ToDictionary(x => x.Key, x => x.Value.ToString());
-
-                if (authService.ValidateTelegramData(data))
-                {
-                    var user = new
-                    {
-                        Id = data["id"],
-                        FirstName = data.GetValueOrDefault("first_name"),
-                        LastName = data.GetValueOrDefault("last_name"),
-                        Username = data.GetValueOrDefault("username"),
-                        PhotoUrl = data.GetValueOrDefault("photo_url")
-                    };
-
-                    return Results.Ok(new { success = true, user });
-                }
-                else
-                {
-                    return Results.BadRequest(new { success = false, message = "Invalid Telegram data" });
-                }
-            });
-            app.MapPost("/auth/phone", async ([FromBody] PhoneRequest request) =>
-            {
-                Console.WriteLine($"📲 Номер телефона от пользователя {request.UserId}: {request.PhoneNumber}");
-
-                // Логика сохранения в базу данных здесь
-                // Например: сохранить через Entity Framework
-
-                return Results.Ok(new { success = true });
             });
 
             //update
