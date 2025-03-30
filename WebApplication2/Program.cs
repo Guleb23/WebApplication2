@@ -92,7 +92,7 @@ namespace WebApplication2
             app.UseAuthentication();
             app.UseAuthorization();
             app.UseHttpsRedirection(); // Перенаправление на HTTPS
-
+            
             // Configure the HTTP request pipeline.
 
             app.UseSwagger();
@@ -104,44 +104,26 @@ namespace WebApplication2
             var botClient = new TelegramBotClient(BOT_TOKEN);
             app.MapGet("/", () => "Server is running!"); // Проверочный маршрут
 
-            app.MapPost("/auth/telegram",  async (HttpContext context, ApplicationDBContext ctx, JWTGenerator generator) =>
+            app.MapPost("/auth/telegram",  async (HttpContext context, ApplicationDBContext ctx, JWTGenerator generator, TelegramDataDTO authData) =>
             {
-                var form = await context.Request.ReadFormAsync();
-
-                var authData = new
-                {
-                    Id = form["id"],
-                    FirstName = form["first_name"],
-                    Username = form["username"],
-                    Hash = form["hash"],
-                    AuthDate = form["auth_date"]
-                };
+               
 
                 // 1️⃣ Проверяем подлинность данных (защита от подмены)
                 string botToken = BOT_TOKEN; 
-                string checkString = $"auth_date={authData.AuthDate}&first_name={authData.FirstName}&id={authData.Id}&username={authData.Username}";
-
-                using var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(botToken));
-                byte[] checkHash = hmac.ComputeHash(Encoding.UTF8.GetBytes(checkString));
-                string calculatedHash = BitConverter.ToString(checkHash).Replace("-", "").ToLower();
-
-                if (authData.Hash != calculatedHash)
-                {
-                    return Results.Unauthorized();
-                }
 
                 // 2️⃣ Проверяем, есть ли пользователь в базе
-                var existingUser = ctx.Users.FirstOrDefault(u => u.Id == authData.Id);
+                var existingUser = ctx.Users.FirstOrDefault(u => u.Id == authData.id);
                 if (existingUser != null)
                 {
-                    string jwt = generator.GenerateJwtToken(authData.Username);
-                    return Results.Json(new { token = jwt, id = authData.Id });
+                    string jwt = generator.GenerateJwtToken(authData.username);
+                    return Results.Json(new { token = jwt, id = authData.id });
                 }
 
                 // 3️⃣ Если пользователя нет — создаем его
                 UserModel newUser = new UserModel()
                 {
-                    FirstName = authData.FirstName,
+                    Id = authData.id,
+                    FirstName = authData.first_name,
                     LastName = "",
                     Email = "",
                     Phone = "",
@@ -165,8 +147,8 @@ namespace WebApplication2
 
                 ctx.PersonalData.Add(personal);
                 await ctx.SaveChangesAsync();
-                string jwtM = generator.GenerateJwtToken(authData.Username);
-                return Results.Json(new { token = jwtM, id = authData.Id });
+                string jwtM = generator.GenerateJwtToken(authData.username);
+                return Results.Json(new { token = jwtM, id = authData.id });
             });
             bool ValidateTelegramData(long id, string firstName, string? lastName, string? username,string? photoUrl, long authDate, string hash)
             {
