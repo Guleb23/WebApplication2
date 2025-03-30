@@ -13,6 +13,7 @@ using Telegram.Bot;
 using System.Reflection.Emit;
 using System.Reflection;
 using Telegram.Bot.Types;
+using Microsoft.AspNetCore.Cors;
 
 namespace WebApplication2
 {
@@ -50,11 +51,13 @@ namespace WebApplication2
                 options.AddPolicy("AllowAllOrigins",
                     builder =>
                     {
-                        // Уберите слеши для единообразия
-                        builder.WithOrigins("https://guleb23-mtrepo-b896.twc1.net")
-                               .AllowAnyMethod()
-                               .AllowAnyHeader()
-                               .AllowCredentials();
+                        builder.WithOrigins(
+                                "https://guleb23-mtrepo-b896.twc1.net",
+                                "https://guleb23-webapplication2-a40c.twc1.net"
+                            )
+                           .AllowAnyMethod()
+                           .AllowAnyHeader()
+                           .AllowCredentials();
                     });
             });
 
@@ -104,7 +107,7 @@ namespace WebApplication2
             var botClient = new TelegramBotClient(BOT_TOKEN);
             app.MapGet("/", () => "Server is running!"); // Проверочный маршрут
 
-            app.MapPost("/auth/telegram",  async (HttpContext context, ApplicationDBContext ctx, JWTGenerator generator, TelegramDataDTO authData) =>
+            app.MapPost("/auth/telegram", [EnableCors("AllowAllOrigins")] async (HttpContext context, ApplicationDBContext ctx, JWTGenerator generator, TelegramDataDTO authData) =>
             {
                
 
