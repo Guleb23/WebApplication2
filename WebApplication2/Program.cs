@@ -86,12 +86,11 @@ namespace WebApplication2
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 
-            const string BOT_TOKEN = "7593576707:AAFfwzMnHc6eUpyrZVrWhJokJg_NdK4LcQs"; // Вставь токен бота
-
+            const string BOT_TOKEN = "7593576707:AAFfwzMnHc6eUpyrZVrWhJokJg_NdK4LcQs";
             var app = builder.Build();
             app.UseCors("AllowAllOrigins");
-            app.MapMethods("/auth/telegram", new[] { "OPTIONS" },
-             () => Results.Ok()).RequireCors("AllowAllOrigins");
+            app.Urls.Add("http://*:5000");
+
             app.UseAuthentication();
             app.UseAuthorization();
             app.UseHttpsRedirection(); // Перенаправление на HTTPS
@@ -103,7 +102,8 @@ namespace WebApplication2
 
 
 
-
+                    app.MapMethods("/auth/telegram", new[] { "OPTIONS" },
+         () => Results.Ok()).RequireCors("AllowAllOrigins");
             var botClient = new TelegramBotClient(BOT_TOKEN);
             app.MapGet("/", () => "Server is running!"); // Проверочный маршрут
 
@@ -153,27 +153,6 @@ namespace WebApplication2
                 string jwtM = generator.GenerateJwtToken(authData.username);
                 return Results.Json(new { token = jwtM, id = authData.id });
             });
-            bool ValidateTelegramData(long id, string firstName, string? lastName, string? username,string? photoUrl, long authDate, string hash)
-            {
-                var dataCheckString = $"auth_date={authDate}\n" +
-                                      $"first_name={firstName}\n" +
-                                      $"id={id}\n" +
-                                      (lastName != null ? $"last_name={lastName}\n" : "") +
-                                      (username != null ? $"username={username}\n" : "") +
-                                      (photoUrl != null ? $"photo_url={photoUrl}\n" : "");
-
-                dataCheckString = dataCheckString.TrimEnd('\n');
-
-                var secretKey = SHA256.HashData(Encoding.UTF8.GetBytes(BOT_TOKEN));
-                using var hmac = new HMACSHA256(secretKey);
-                var hashBytes = hmac.ComputeHash(Encoding.UTF8.GetBytes(dataCheckString));
-                var computedHash = BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
-
-                return computedHash == hash;
-            }
-            
-            //Methods
-            //Get
             app.MapGet("api/users", (ApplicationDBContext ctx) =>
             {
                 return ctx.Users.ToList();
