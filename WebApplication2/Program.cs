@@ -53,7 +53,7 @@ namespace WebApplication2
                     {
                         builder.WithOrigins(
                                 "https://guleb23-mtrepo-b896.twc1.net",
-                                "https://mt-repo-a8r00flbc-guleb23s-projects.vercel.app"
+                                "https://mt-repo.vercel.app"
                             )
                            .AllowAnyMethod()
                            .AllowAnyHeader()
