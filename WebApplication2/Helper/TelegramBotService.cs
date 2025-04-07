@@ -85,7 +85,7 @@ public class TelegramBotService : BackgroundService
                     // Пользователь уже зарегистрирован
                     await bot.SendTextMessageAsync(
                         chatId: chatId,
-                        text: "Вы уже зарегистрированы",
+                        text: $"Вы уже зарегистрированы, ваш пароль {existingUser.Password} и логин {existingUser.Phone}",
                         cancellationToken: token
                     );
                 }
@@ -125,7 +125,8 @@ public class TelegramBotService : BackgroundService
                     // Отправляем сообщение с данными для входа
                     await bot.SendTextMessageAsync(
                         chatId: chatId,
-                        text: $"Регистрация прошла успешно! Ваш пароль для входа: {password}",
+                        text: $"Регистрация прошла успешно! " + $"Ваш логин: {userModel.Phone}" +
+                        $"Ваш пароль для входа: {password}",
                         cancellationToken: token
                     );
                 }
