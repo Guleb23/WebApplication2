@@ -81,7 +81,7 @@ namespace WebApplication2
             builder.Services.AddSwaggerGen();
             var app = builder.Build();
             app.UseCors("AllowAllOrigins");
-            //app.Urls.Add("http://*:5000");
+            app.Urls.Add("http://*:5000");
 
             app.UseAuthentication(); 
             app.Services.GetRequiredService<IHostedService>();
