@@ -2,7 +2,7 @@
 {
     public class TelegramCodeDTO
     {
-        public string Username { get; set; }
+        public long ChatId { get; set; }
         public string Code { get; set; }
     }
 }

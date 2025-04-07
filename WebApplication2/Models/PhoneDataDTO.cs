@@ -2,6 +2,6 @@
 {
     public class PhoneDataDTO
     {
-        public string phone { get; set; }
+        public long ChatId { get; set; } // 📌 chat_id из Telegram
     }
 }

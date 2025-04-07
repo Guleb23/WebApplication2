@@ -7,13 +7,6 @@ using WebApplication2.Helper;
 using WebApplication2.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Identity;
-using System.Security.Cryptography;
-using Telegram.Bot;
-using System.Reflection.Emit;
-using System.Reflection;
-using Telegram.Bot.Types;
-using Microsoft.AspNetCore.Cors;
 
 namespace WebApplication2
 {
@@ -63,11 +56,12 @@ namespace WebApplication2
 
 
 
+
             builder.Services.AddDbContext<ApplicationDBContext>(options =>
             {
                 options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"));
-            });
-
+            }); 
+            builder.Services.AddHostedService<TelegramBotService>();
             builder.Services.AddScoped<PasswordGeneration>();
             builder.Services.AddScoped<SendSMS>();
             builder.Services.AddScoped<Validation>();
@@ -85,13 +79,12 @@ namespace WebApplication2
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
-
-            const string BOT_TOKEN = "7593576707:AAFfwzMnHc6eUpyrZVrWhJokJg_NdK4LcQs";
             var app = builder.Build();
             app.UseCors("AllowAllOrigins");
             //app.Urls.Add("http://*:5000");
 
-            app.UseAuthentication();
+            app.UseAuthentication(); 
+            app.Services.GetRequiredService<IHostedService>();
             app.UseAuthorization();
             app.UseHttpsRedirection(); // Перенаправление на HTTPS
             
@@ -99,125 +92,8 @@ namespace WebApplication2
 
             app.UseSwagger();
             app.UseSwaggerUI();
-            var botClient = new TelegramBotClient("7782357357:AAFfayAbEl2WZRJmDXiJrZZAUEtewF2edWQ");
 
-            // Endpoint для отправки кода на телефон
-            app.MapPost("/auth/send-code", async (HttpContext context, ApplicationDBContext ctx, [FromBody] PhoneDataDTO phoneData) =>
-            {
-                // Генерация случайного 6-значного кода
-                Random random = new Random();
-                string code = random.Next(100000, 999999).ToString();
-
-                // Отправка кода через Telegram бота
-                string botToken = BOT_TOKEN; // Токен бота
-                var botClient = new TelegramBotClient(botToken);
-
-                // Отправка сообщения в Telegram
-                await botClient.SendTextMessageAsync($"@{phoneData.phone}", $"Ваш код подтверждения: {code}");
-
-                // Сохраняем код в памяти (или базе данных) для последующей проверки
-                TelegramCodeStorage.Codes[phoneData.phone] = code;
-
-                return Results.Ok(new { message = "Код отправлен", phone = phoneData.phone });
-            });
-            // Endpoint для проверки кода
-            app.MapPost("/auth/verify-code", async (HttpContext context, ApplicationDBContext ctx, [FromBody] VerifyCodeDTO verifyData, JWTGenerator generator) =>
-            {
-                // Проверка, есть ли код в памяти
-                if (TelegramCodeStorage.Codes.TryGetValue(verifyData.phone, out var storedCode))
-                {
-                    // Если коды совпадают
-                    if (storedCode == verifyData.code)
-                    {
-                        // Находим пользователя в базе по телефону (или создаём нового)
-                        var existingUser = ctx.Users.FirstOrDefault(u => u.Phone == verifyData.phone);
-                        if (existingUser == null)
-                        {
-                            // Создание нового пользователя (если не найден)
-                            var newUser = new UserModel
-                            {
-                                Phone = verifyData.phone,
-                                FirstName = "New User", // Для примера, здесь можно использовать данные из Telegram
-                                LastName = "",
-                                Email = "",
-                                Password = "" // Можно использовать метод для создания пароля
-                            };
-                            ctx.Users.Add(newUser);
-                            await ctx.SaveChangesAsync();
-                            existingUser = newUser;
-                        }
-
-                        // Генерация JWT
-                        string jwtToken = generator.GenerateJwtToken(existingUser.Phone);
-
-                        // Возвращаем токен
-                        return Results.Json(new { token = jwtToken, id = existingUser.Id });
-                    }
-                    else
-                    {
-                        // Если код не совпадает
-                        return Results.BadRequest(new { message = "Неверный код" });
-                    }
-                }
-                else
-                {
-                    // Если код не найден в памяти
-                    return Results.BadRequest(new { message = "Код не был отправлен" });
-                }
-            });
-
-
-
-            app.MapMethods("/auth/telegram", new[] { "OPTIONS" },
-         () => Results.Ok()).RequireCors("AllowAllOrigins");
-            app.MapGet("/", () => "Server is running!"); // Проверочный маршрут
-
-            app.MapPost("/auth/telegram", [EnableCors("AllowAllOrigins")] async (HttpContext context, ApplicationDBContext ctx, JWTGenerator generator, TelegramDataDTO authData) =>
-            {
-               
-
-                // 1️⃣ Проверяем подлинность данных (защита от подмены)
-                string botToken = BOT_TOKEN; 
-
-                // 2️⃣ Проверяем, есть ли пользователь в базе
-                var existingUser = ctx.Users.FirstOrDefault(u => u.Id == authData.id);
-                if (existingUser != null)
-                {
-                    string jwt = generator.GenerateJwtToken(authData.username);
-                    return Results.Json(new { token = jwt, id = authData.id });
-                }
-
-                // 3️⃣ Если пользователя нет — создаем его
-                UserModel newUser = new UserModel()
-                {
-                    Id = authData.id,
-                    FirstName = authData.first_name,
-                    LastName = "",
-                    Email = "",
-                    Phone = "",
-                    Password = ""
-                };
-
-                ctx.Users.Add(newUser);
-                await ctx.SaveChangesAsync();
-
-                // 4️⃣ Создаем личные данные (если нужно)
-                PersonalDataModel personal = new PersonalDataModel()
-                {
-                    Seria = "",
-                    Nomer = "",
-                    SNILS = "",
-                    DateVidachi = "",
-                    Propiska = "",
-                    WhoVidal = "",
-                    UserId = newUser.Id
-                };
-
-                ctx.PersonalData.Add(personal);
-                await ctx.SaveChangesAsync();
-                string jwtM = generator.GenerateJwtToken(authData.username);
-                return Results.Json(new { token = jwtM, id = authData.id });
-            });
+        
             app.MapGet("api/users", (ApplicationDBContext ctx) =>
             {
                 return ctx.Users.ToList();
@@ -501,21 +377,6 @@ namespace WebApplication2
             });
 
             app.Run();
-        }
-        public class Update
-        {
-            public Message Message { get; set; }
-        }
-
-        public class Message
-        {
-            public Contact Contact { get; set; }
-        }
-
-        public class Contact
-        {
-            public string PhoneNumber { get; set; }
-            public long UserId { get; set; }
         }
 
     }
