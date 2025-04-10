@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Linq;
 using WebApplication2.Models;
 using WebApplication2.Database;
+using System.Security.Cryptography;
 
 public class TelegramBotService : BackgroundService
 {
@@ -158,8 +159,20 @@ public class TelegramBotService : BackgroundService
     // Метод для генерации случайного пароля
     private string GenerateRandomPassword()
     {
-        var rand = new Random();
-        const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-        return new string(Enumerable.Range(0, 8).Select(_ => chars[rand.Next(chars.Length)]).ToArray());
+        using (var rng = new RNGCryptoServiceProvider())
+        {
+            string Digits = "0123456789";
+            var result = new char[4];
+            var buffer = new byte[sizeof(uint)];
+
+            for (int i = 0; i < 4; i++)
+            {
+                rng.GetBytes(buffer);
+                var num = BitConverter.ToUInt32(buffer, 0);
+                result[i] = Digits[(int)(num % (uint)Digits.Length)];
+            }
+
+            return new string(result);
+        }
     }
 }
