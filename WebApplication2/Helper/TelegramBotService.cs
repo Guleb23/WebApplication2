@@ -74,6 +74,10 @@ public class TelegramBotService : BackgroundService
                 var phoneNumber = contact.PhoneNumber;
                 var chatId = update.Message.Chat.Id;
 
+                // ✅ Нормализация номера: добавляем + если его нет
+                if (!phoneNumber.StartsWith("+"))
+                    phoneNumber = "+" + phoneNumber;
+
                 Console.WriteLine($"📲 Пользователь отправил номер телефона: {phoneNumber} (chat_id: {chatId})");
 
                 // Проверка, зарегистрирован ли пользователь в базе данных
@@ -82,7 +86,6 @@ public class TelegramBotService : BackgroundService
 
                 if (existingUser != null)
                 {
-                    // Пользователь уже зарегистрирован
                     await bot.SendTextMessageAsync(
                         chatId: chatId,
                         text: $"Вы уже зарегистрированы, ваш пароль {existingUser.Password} и логин {existingUser.Phone}",
@@ -91,8 +94,7 @@ public class TelegramBotService : BackgroundService
                 }
                 else
                 {
-                    // Пользователь не зарегистрирован, добавляем в базу данных
-                    var password = GenerateRandomPassword(); // Метод для генерации пароля
+                    var password = GenerateRandomPassword();
                     UserModel userModel = new UserModel()
                     {
                         FirstName = "",
@@ -105,8 +107,8 @@ public class TelegramBotService : BackgroundService
                     };
 
                     _dbContext.Users.Add(userModel);
+                    await _dbContext.SaveChangesAsync();
 
-                    await _dbContext.SaveChangesAsync(); // Сохраняем, чтобы получить Id пользователя
                     PersonalDataModel pesonal = new PersonalDataModel()
                     {
                         Seria = "",
@@ -118,15 +120,12 @@ public class TelegramBotService : BackgroundService
                         UserId = userModel.Id,
                     };
 
-
                     _dbContext.PersonalData.Add(pesonal);
                     await _dbContext.SaveChangesAsync();
 
-                    // Отправляем сообщение с данными для входа
                     await bot.SendTextMessageAsync(
                         chatId: chatId,
-                        text: $"Регистрация прошла успешно! " + $"Ваш логин: {userModel.Phone}" +
-                        $"Ваш пароль для входа: {password}",
+                        text: $"Регистрация прошла успешно!\nВаш логин: {userModel.Phone}\nВаш пароль: {password}",
                         cancellationToken: token
                     );
                 }
