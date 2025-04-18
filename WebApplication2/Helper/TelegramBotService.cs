@@ -103,6 +103,7 @@ public class TelegramBotService : BackgroundService
                         Email = "",
                         Phone = phoneNumber,
                         Password = password,
+                        RoleId = 1, 
                         PaymentMethodId = 1,
                         GetDocsSposobId = 1,
                     };

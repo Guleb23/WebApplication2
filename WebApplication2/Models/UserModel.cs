@@ -18,9 +18,11 @@ namespace WebApplication2.Models
         public int PaymentMethodId { get; set; } = 1;
         public int GetDocsSposobId { get; set; } = 1;
 
+        public int RoleId { get; set; } = 1;
 
 
-
+        [JsonIgnore]
+        public Role? Role { get; set; }
 
         [JsonIgnore]
         public PersonalDataModel? DataModel { get; set; }

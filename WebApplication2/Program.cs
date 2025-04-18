@@ -7,6 +7,7 @@ using WebApplication2.Helper;
 using WebApplication2.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using WebApplication2.Models.DTO;
 
 namespace WebApplication2
 {
@@ -193,6 +194,7 @@ namespace WebApplication2
                         LastName = userDTO.LastName,
                         Email = userDTO.Email,
                         Phone = userDTO.Phone,
+                        RoleId = 1,
                         Password = generator.GeneratePassword(),
                         PaymentMethodId = userDTO.PaymentMethodId,
                         GetDocsSposobId = userDTO.GetDocsSposobId,
@@ -230,11 +232,12 @@ namespace WebApplication2
                 UserModel? user = ctx.Users.FirstOrDefault(u => u.Password == loginUser.Password && u.Phone == loginUser.Phone);
                 if (user != null)
                 {
-                    string jwt = generator.GenerateJwtToken(loginUser.Phone);
+                    string jwt = generator.GenerateJwtToken(user);
                     var jsonObject = new
                     {
                         token = jwt,
                         id = user.Id.ToString(),
+                        role = user.RoleId
 
                     };
                     return Results.Ok(jsonObject);

@@ -2,6 +2,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using WebApplication2.Models;
 
 namespace WebApplication2.Helper
 {
@@ -18,17 +19,24 @@ namespace WebApplication2.Helper
             _audience = audience;
         }
 
-        public string GenerateJwtToken(string username)
+        public string GenerateJwtToken(UserModel user)
         {
             var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_key));
             var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 
-            var claims = new[]
+            var claims = new List<Claim>
             {
-            new Claim(JwtRegisteredClaimNames.Sub, username),
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-            new Claim(ClaimTypes.Role, "User") // Добавьте роли, если нужно
-        };
+                new Claim(JwtRegisteredClaimNames.Sub, user.Email), // Используем email как идентификатор
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()), // Добавляем ID пользователя
+                new Claim(ClaimTypes.Email, user.Email) // Добавляем email
+            };
+
+            // Добавляем роль, если она есть у пользователя
+            if (user.Role != null)
+            {
+                claims.Add(new Claim(ClaimTypes.Role, user.Role.Name));
+            }
 
             var token = new JwtSecurityToken(
                 issuer: _issuer,
