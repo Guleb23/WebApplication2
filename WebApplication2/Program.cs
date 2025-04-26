@@ -47,7 +47,7 @@ namespace WebApplication2
                     builder =>
                     {
                         builder.WithOrigins(
-                                "http://localhost:5173",
+                                "https://guleb23-mtrepo-b896.twc1.net",
                                 "https://mt-repo.vercel.app"
                             )
                            .AllowAnyMethod()
