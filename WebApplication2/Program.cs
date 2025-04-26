@@ -8,6 +8,7 @@ using WebApplication2.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using WebApplication2.Models.DTO;
+using Telegram.Bot.Types;
 
 namespace WebApplication2
 {
@@ -46,7 +47,7 @@ namespace WebApplication2
                     builder =>
                     {
                         builder.WithOrigins(
-                                "https://guleb23-mtrepo-b896.twc1.net",
+                                "http://localhost:5173",
                                 "https://mt-repo.vercel.app"
                             )
                            .AllowAnyMethod()
@@ -61,7 +62,7 @@ namespace WebApplication2
             builder.Services.AddDbContext<ApplicationDBContext>(options =>
             {
                 options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"));
-            }); 
+            });
             builder.Services.AddHostedService<TelegramBotService>();
             builder.Services.AddScoped<PasswordGeneration>();
             builder.Services.AddScoped<SendSMS>();
@@ -84,17 +85,17 @@ namespace WebApplication2
             app.UseCors("AllowAllOrigins");
             app.Urls.Add("http://*:5000");
 
-            app.UseAuthentication(); 
+            app.UseAuthentication();
             app.Services.GetRequiredService<IHostedService>();
             app.UseAuthorization();
             app.UseHttpsRedirection(); // Перенаправление на HTTPS
-            
+
             // Configure the HTTP request pipeline.
 
             app.UseSwagger();
             app.UseSwaggerUI();
 
-        
+
             app.MapGet("api/users", (ApplicationDBContext ctx) =>
             {
                 return ctx.Users.ToList();
@@ -171,7 +172,7 @@ namespace WebApplication2
             });
 
 
-            app.MapPost("api/createUser", async (ApplicationDBContext ctx, [FromBody] UserDTO userDTO ,  PasswordGeneration generator, SendSMS sender, Validation val) =>
+            app.MapPost("api/createUser", async (ApplicationDBContext ctx, [FromBody] UserDTO userDTO, PasswordGeneration generator, SendSMS sender, Validation val) =>
             {
                 // Проверка, что объект user не null
                 if (userDTO == null)
@@ -213,11 +214,11 @@ namespace WebApplication2
                         WhoVidal = "",
                         UserId = userModel.Id,
                     };
-                    
-                    
+
+
                     ctx.PersonalData.Add(pesonal);
                     await ctx.SaveChangesAsync();
-                    sender.SendSmsAsync(userModel.Phone, userModel.Password);
+                    //sender.SendSmsAsync(userModel.Phone, userModel.Password);
 
                     return Results.Ok(userModel);
                 }
@@ -327,7 +328,7 @@ namespace WebApplication2
                     if (!user.Phone.IsNullOrEmpty()) oldUser.Phone = user.Phone;
                     await ctx.SaveChangesAsync();
                     return Results.Ok(user);
-                    
+
                 }
 
             });
@@ -379,6 +380,99 @@ namespace WebApplication2
                 return Results.Ok("Документ успешно удален.");
             });
 
+
+            app.MapPost("api/createOrder/{userId}", async (ApplicationDBContext ctx, OrderDTO orderData, int userId) =>
+            {
+                var user = await ctx.Users.FindAsync(userId);
+                if (user == null)
+                {
+                    return Results.BadRequest("User not found");
+                }
+
+                var manager = ctx.Users.FirstOrDefault(u => u.RoleId == 2);
+                var geodesist = ctx.Users.FirstOrDefault(u => u.RoleId == 3);
+                var engeener = ctx.Users.FirstOrDefault(u => u.RoleId == 4);
+
+                if (manager == null || geodesist == null || engeener == null)
+                {
+                    return Results.BadRequest("One or more required roles are missing.");
+                }
+
+                var order = new OrderModel
+                {
+                    Address = orderData.Address,
+                    Price = 0,
+                    TypeOfWork = orderData.TypeOfWork,
+                    KadastrNumber = orderData.KadastrNumber,
+                    ManagerId = manager.Id,
+                    GeodesistId = geodesist.Id,
+                    KadastrEngineerId = engeener.Id,
+                    UserId = userId,
+                    StatusId = 1
+                };
+
+                try
+                {
+                    ctx.Orders.Add(order);
+                    await ctx.SaveChangesAsync();
+                    return Results.Ok(new { order.Id });
+                }
+                catch (Exception ex)
+                {
+                    return Results.Problem($"Something went wrong: {ex.Message}");
+                }
+            });
+
+            app.MapGet("api/Orders/{userId}", async (ApplicationDBContext ctx, int userId) =>
+            {
+                var orders = await ctx.Orders
+                .Select(o => new
+                {
+                    Id = o.Id,
+                    Address = o.Address,
+                    KadastrNumber = o.KadastrNumber,
+                    TypeOfWork = o.TypeOfWork,
+                    Price = o.Price,
+
+                    User = new
+                    {
+                        Id = o.User.Id,
+                        Name = o.User.FirstName,         // Предполагая, что UserModel имеет Name
+                        Email = o.User.Email       // и другие нужные поля
+                    },
+
+                    Manager = new
+                    {
+                        Id = o.Manager.Id,
+                        Name = o.Manager.FirstName
+                    },
+
+                    Geodesist = new
+                    {
+                        Id = o.Geodesist.Id,
+                        Name = o.Geodesist.FirstName
+                    },
+
+                    KadastrEngineer = new
+                    {
+                        Id = o.KadastrEngineer.Id,
+                        Name = o.KadastrEngineer.FirstName
+                    },
+
+                    Status = new
+                    {
+                        Id = o.Status.Id,
+                        Name = o.Status.Name       // Предполагая, что StatusModel имеет Name
+                    }
+                })
+                .Where(u => u.User.Id == userId)
+                .ToListAsync();
+                if(orders.Count == 0)
+                {
+                    return Results.NotFound();
+                }
+                return Results.Ok(orders);
+            });
             app.Run();
         }
 

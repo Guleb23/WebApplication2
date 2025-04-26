@@ -1,4 +1,4 @@
-﻿namespace WebApplication2.Models
+﻿namespace WebApplication2.Models.Helpers
 {
     public class TelegramPhoneRequest
     {

@@ -38,5 +38,7 @@ namespace WebApplication2.Database
         public DbSet<PaymentMethodModel>  PaymentMethods { get; set; }
         public DbSet<GetDocsSposobModel>  GetDocsSposobModels { get; set; }
         public DbSet<DocumentModel>  Documents { get; set; }
+        public DbSet<StatusModel>  Status { get; set; }
+        public DbSet<OrderModel>  Orders { get; set; }
     }
 }
